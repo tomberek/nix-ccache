@@ -38,9 +38,10 @@
           done
           for i in ld ; do
              cat > $out/bin/$i <<EOF
-#!/bin/sh
-cp "$3" "$2"
-EOF
+        #!/bin/sh
+        # no-op?
+        exit 0
+        EOF
             chmod +x $out/bin/$i
         done
 
@@ -98,6 +99,7 @@ EOF
                 };
               in ''
                     mkdir -p $out/bin
+                    ${final.pkgs.which}/bin/which g++
                     g++ -o $out/bin/hello ${builtins.outputOf wrapper "out"}
                     $out/bin/hello
               '';

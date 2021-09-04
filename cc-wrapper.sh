@@ -40,8 +40,11 @@ for ((n = 0; n < $#; n++)); do
 done
 
 program=@program@
+if [[ "$program" != "ld" ]]; then
+    echo "SKIPPING ld"
+fi
 if [[ "$program" != "ld" && ( ! $isCompilation || ${#sources[*]} != 1 || ${sources[0]} =~ conftest ) ]]; then
-    #echo "SKIP: $program" "$@" -- "${sources[@]}" >&2
+    echo "SKIP: $program $1 ... " "${@: -1}"-- "${sources[@]}" >&2
     exec @next@/bin/@program@ "$@"
 fi
 
@@ -57,13 +60,13 @@ else
     ext=ii
 fi
 
-#echo "NIX-CCACHE: $@" >&2
+echo "NIX-CCACHE: $@" >&2
 
-#echo "preprocessing to $dest.$ext..." >&2
+echo "preprocessing to $dest.$ext..." >&2
 
 @next@/bin/@program@ -o "$dest.$ext" -E "$source" "${cppFlags[@]}"
 
-#echo "compiling to $dest..."
+echo "compiling to $dest..."
 
 escapedArgs='"-o" "${placeholder "out"}" "-c" '$(readlink -f "$dest.$ext")' '
 
@@ -73,7 +76,7 @@ for arg in "${compileFlags[@]}"; do
     escapedArgs+='" '
 done
 
-#echo "FINAL: @next@/bin/@program@ $escapedArgs"
+echo "FINAL: @next@/bin/@program@ $escapedArgs"
 
 # FIXME: add any store paths mentioned in the arguments (e.g. -B
 # flags) to the input closure, or filter them?
