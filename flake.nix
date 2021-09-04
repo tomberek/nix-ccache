@@ -36,6 +36,13 @@
               --subst-var libexec
             chmod +x $out/bin/$i
           done
+          for i in ld ; do
+             cat > $out/bin/$i <<EOF
+#!/bin/sh
+cp "$3" "$2"
+EOF
+            chmod +x $out/bin/$i
+        done
 
           ln -s $next/bin/cpp $out/bin/cpp
         '';
@@ -75,11 +82,24 @@
             trivial = final.nix-ccacheStdenv.mkDerivation {
               name = "trivial";
               requiredSystemFeatures = [ "recursive-nix" ];
-              buildCommand = ''
-                mkdir -p $out/bin
-                g++ -o hello.o -c ${./hello.cc} -DWHO='"World"' -std=c++11
-                g++ -o $out/bin/hello hello.o
-                $out/bin/hello
+              buildCommand = let
+                wrapper = final.nix-ccacheStdenv.mkDerivation {
+                  name = "cc.drv";
+                  requiredSystemFeatures = [ "recursive-nix" ];
+                  __contentAddressed = true;
+                  outputHashMode = "text";
+                  outputHashAlgo = "sha256";
+                  buildCommand = ''
+                    # mkdir -p $out/bin
+                    g++ -o hello.o -c ${./hello.cc} -DWHO='"World"' -std=c++11
+                    cp hello.o $out
+                    chmod -x $out
+                  '';
+                };
+              in ''
+                    mkdir -p $out/bin
+                    g++ -o $out/bin/hello ${builtins.outputOf wrapper "out"}
+                    $out/bin/hello
               '';
             };
 

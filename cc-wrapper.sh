@@ -39,8 +39,9 @@ for ((n = 0; n < $#; n++)); do
     fi
 done
 
-if [[ ! $isCompilation || ${#sources[*]} != 1 || ${sources[0]} =~ conftest ]]; then
-    #echo "SKIP: ${sources[@]}" >&2
+program=@program@
+if [[ "$program" != "ld" && ( ! $isCompilation || ${#sources[*]} != 1 || ${sources[0]} =~ conftest ) ]]; then
+    #echo "SKIP: $program" "$@" -- "${sources[@]}" >&2
     exec @next@/bin/@program@ "$@"
 fi
 
@@ -77,17 +78,20 @@ done
 # FIXME: add any store paths mentioned in the arguments (e.g. -B
 # flags) to the input closure, or filter them?
 
-@nix@/bin/nix-build --quiet -o "$dest.link" -E '(
+DRVPATH=$(@nix@/bin/nix-instantiate --quiet -E '(
   derivation {
     name = "cc";
     system = "@system@";
     builder = builtins.storePath "@next@/bin/@program@";
     extra = builtins.storePath "@binutils@";
     args = [ '"$escapedArgs"' "-B@libexec@/" "-B@binutils@/bin" ];
+    __contentAddressed = true;
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
   }
-)' > /dev/null
+)')
 
-cp "$dest.link" "$dest"
+cp "$DRVPATH" "$dest"
 
 rm -f "$dest.$ext" "$dest.link"
 
